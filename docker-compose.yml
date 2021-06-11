@@ -1,8 +1,31 @@
 version: "2"
 services:
+  jenkins:
+    container_name: jenkins
+    image: jenkins/jenkins:lts
+    networks:
+      - cloudacademylabs
+    ports:
+      - "8080:8080"
+    environment:
+      - DOCKER_HOST=tcp://socat:2375
+    depends_on:
+      - socat
+  socat:
+    container_name: socat
+    image: alpine/socat:latest
+    networks:
+      - cloudacademylabs
+    command: tcp-listen:2375,fork,reuseaddr unix-connect:/var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    expose:
+      - "2375"
   postgres:
     container_name: postgres
     image: postgres
+    networks:
+      - cloudacademylabs
     environment:
       POSTGRES_USER: sonar
       POSTGRES_PASSWORD: sonar
@@ -14,6 +37,8 @@ services:
     image: sonarqube
     ports:
       - "9000:9000"
+    networks:
+      - cloudacademylabs
     environment:
       SONARQUBE_JDBC_USERNAME: sonar
       SONARQUBE_JDBC_PASSWORD: sonar
@@ -34,3 +59,7 @@ volumes:
   postgresql:
   postgresql_data:
 
+networks:
+  cloudacademylabs:
+    name: cloudacademylabs
+    driver: bridge
